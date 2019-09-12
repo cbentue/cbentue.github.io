@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <!--Titulo de la página-->
+        <title>Practica Visualización Online</title> 
+        
+        <!--Estilos css de la página-->
+        <link rel="stylesheet" href="../css/estilos.css">
+
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+
+        <!--Links a Qgis y Leaflet-->
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/qgis2web.css"><link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+
+        <!--Icono de la página-->
+        <link rel="Shortcut Icon" href="../icons/icon.png" type="image/x-icon" />
+        
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+    </head>
+    <body>
+        <!--Barra de navegación de la página-->
+            <nav class="menu">
+                    <a href="../index.html" class="elemento_menu">INICIO</a>
+                    <a href="../Qgis_Accesibilidad/index.html" class="elemento_menu">MAPA ACCESIBILIDAD</a>
+                    <a href="index.html" class="elemento_menu">VISOR</a>
+                </nav>
+        <div id="map">
+        </div>
+
+        <!--Scripts necesarios para la utilización de leaflet-->
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+
+        <!--GeoJson que hemos transformado a formato JavaScript para poder incluir en el visor del mapa-->
+        <script src="../geojson/provincias.js"></script>
+
+        <script>
+
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+            highlightLayer.openPopup();
+        }
+
+        //creación de la variable map que albergará el mapa del visor
+        var map = L.map('map', {
+            zoomControl:true, maxZoom:28, minZoom:1
+        });
+        
+        var hash = new L.Hash(map);
+
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="http://leafletjs.com" title="A JS library for interactive maps">Leaflet</a>');
+        
+        // Declaramos el cuadro de medicion de distancia
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+
+        //lo añadimos al mapa
+        measureControl.addTo(map);
+
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+            if (bounds_group.getLayers().length) {
+                map.fitBounds(bounds_group.getBounds());
+            }
+            map.setMaxBounds(map.getBounds());
+        }
+
+        L.ImageOverlay.include({
+            getBounds: function () {
+                return this._bounds;
+            }
+        });
+
+        //Obtenemos capas de un servidor externo
+        var stamen_tms = L.tileLayer('http://a.tile.stamen.com/terrain/{z}/{x}/{y}.png', {
+        attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>,<a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash;Map data: &copy; <a href="http://openstreetmap.org">OpenStreetMap</a>contributors,<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>',
+        maxZoom: 20
+        });
+        stamen_tms.addTo(map);
+
+        //Añadimos TMS
+        var OSM_mapnik = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        });
+        //añadimos la capa osm al mapa
+        OSM_mapnik.addTo(map);
+
+        //Añadimos WMS
+        var PNOA = L.tileLayer.wms('http://www.idee.es/wms/PNOA/PNOA?', {  
+            layers: 'PNOA',          
+            format: 'image/png',     
+            transparent: true,      
+            });
+        //añadimos la capa pnoa al mapa
+        PNOA.addTo(map);         
+
+        //Añadimos el control para las capas anteriormente creadas
+        var baseMaps = {                  
+            "OpenStreetMap": OSM_mapnik,  
+            "Stamen": stamen_tms,
+            };
+        var overlayMaps = {             
+            "Ortotfoto PNOA": PNOA       
+            };
+        var capas = L.control.layers(  
+        baseMaps,                     
+        overlayMaps,                 
+        {collapsed:true});         
+        capas.addTo(map);          
+
+        //Escala
+        var escala = L.control.scale();
+        escala.addTo(map);       
+        
+        //añadimos al mapa el geojson que hemos importado en formato JavaScript
+        var provincias = L.geoJSON(provincias, {
+                    color: 'blue',             
+                    fillColor: 'red',        
+                    fillOpacity: 0.5,
+                  });
+
+        provincias.addTo(map);
+        </script>
+    </body>
+</html>
