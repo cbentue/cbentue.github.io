@@ -93,7 +93,12 @@
             }
             map.setMaxBounds(map.getBounds());
         }
-
+        var img_mde_spain_0 = 'data/mde_spain_0.png';
+        var img_bounds_mde_spain_0 = [[34.162349132910734,-10.258324427845855],[44.53615095270104,5.1166747704384665]];
+        var layer_mde_spain_0 = new L.imageOverlay(img_mde_spain_0, img_bounds_mde_spain_0);
+        bounds_group.addLayer(layer_mde_spain_0);
+        //map.addLayer(layer_mde_spain_0);
+        setBounds();
         L.ImageOverlay.include({
             getBounds: function () {
                 return this._bounds;
